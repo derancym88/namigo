@@ -1,0 +1,19 @@
+# Plain-HTTP config used ONLY for the first certificate issue, before any
+# Let's Encrypt certificate exists. scripts/issue-cert.sh swaps this in,
+# obtains the certificate, then restores namigo.conf.
+
+server {
+    listen 80 default_server;
+    server_name _;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        proxy_pass http://namigo-web:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

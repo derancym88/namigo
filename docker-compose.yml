@@ -1,0 +1,77 @@
+name: namigo
+
+services:
+  namigo-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    container_name: namigo-web
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    volumes:
+      - namigo-app-data:/app-data
+    expose:
+      - "3000"
+    networks:
+      - namigo
+
+  namigo-n8n:
+    image: n8nio/n8n:1.63.4
+    container_name: namigo-n8n
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      N8N_PORT: 5678
+      N8N_PROTOCOL: https
+      GENERIC_TIMEZONE: Asia/Kuala_Lumpur
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      # n8n sits behind nginx, which terminates TLS.
+      N8N_PROXY_HOPS: "1"
+    volumes:
+      - namigo-n8n-data:/home/node/.n8n
+    expose:
+      - "5678"
+    networks:
+      - namigo
+
+  namigo-nginx:
+    image: nginx:1.27-alpine
+    container_name: namigo-nginx
+    restart: unless-stopped
+    depends_on:
+      - namigo-web
+      - namigo-n8n
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    networks:
+      - namigo
+
+  namigo-certbot:
+    image: certbot/certbot:latest
+    container_name: namigo-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # Renewal check twice a day; certbot exits immediately when nothing is due.
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;'
+    networks:
+      - namigo
+
+volumes:
+  namigo-app-data:
+  namigo-n8n-data:
+
+networks:
+  namigo:
+    driver: bridge
