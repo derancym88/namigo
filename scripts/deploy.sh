@@ -37,6 +37,8 @@ $SSH "cd ${APP_DIR} && \
 
 echo "==> Rebuilding containers"
 # shellcheck disable=SC2029
+$SSH "cd ${APP_DIR} && bash scripts/link-env.sh"
+# shellcheck disable=SC2029
 $SSH "cd ${APP_DIR} && docker compose up -d --build && docker compose ps"
 
 echo "==> Health check"

@@ -13,6 +13,8 @@ N8N_DOMAIN="${N8N_DOMAIN:-n8n.${DOMAIN}}"
 EMAIL="${EMAIL:?set EMAIL for expiry notices}"
 CONF_DIR="docker/nginx/conf.d"
 
+bash scripts/link-env.sh
+
 echo "==> Starting web app and temporary HTTP-only nginx"
 docker compose up -d --build namigo-web
 mv "${CONF_DIR}/namigo.conf" "${CONF_DIR}/namigo.conf.pending"

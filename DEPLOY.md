@@ -128,6 +128,30 @@ NAMIGO_DEPLOYMENT_IP=118.107.218.216
 NAMIGO_LICENSE_DOMAIN=amazmaxs.cloud
 ```
 
+### Link `.env` for Compose interpolation
+
+```bash
+bash scripts/link-env.sh
+```
+
+Docker Compose resolves `${VAR}` in the compose file itself - the
+`NEXT_PUBLIC_*` build args - from the shell or from `.env`, **not** from
+`env_file:`. `env_file:` only injects variables into the running container.
+Without this link the build args bake in as empty strings and the browser-side
+Supabase client ships with no URL or key, so login and register fail while the
+server looks healthy.
+
+### Preflight
+
+```bash
+bash scripts/preflight.sh
+```
+
+This checks for empty required variables, confirms
+`NAMIGO_LICENSE_SERVER_IP` equals `NAMIGO_DEPLOYMENT_IP`, resolves your DNS
+records against the deployment IP, and proves the `NEXT_PUBLIC_*` build args
+actually interpolate. Fix anything it reports before building.
+
 ---
 
 ## Phase 4 — Render nginx and issue the certificate
