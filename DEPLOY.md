@@ -40,14 +40,40 @@ Copy your public key up first if you have not already:
 ssh-copy-id -p 52436 root@118.107.218.216
 ```
 
-On the server:
+On the server, fetch the code into `/opt/namigo`:
 
 ```bash
 apt-get update -y && apt-get install -y git
-git clone https://github.com/derancym88/namigo /opt/namigo
-cd /opt/namigo
-git checkout claude/quirky-galileo-0qn08q
 
+mkdir -p /opt/namigo
+cd /opt/namigo
+
+# `git clone` refuses to write into a non-empty directory, and /opt/namigo
+# usually already exists (from bootstrap, or an earlier deployment). Init in
+# place instead - this works whether the directory is empty or not.
+git init
+git remote add origin https://github.com/derancym88/namigo
+git fetch origin claude/quirky-galileo-0qn08q
+git checkout -b claude/quirky-galileo-0qn08q FETCH_HEAD
+```
+
+If the repository is private, `git fetch` will prompt for credentials. Use a
+personal access token, then revoke it or switch to SSH afterwards:
+
+```bash
+git remote set-url origin https://<TOKEN>@github.com/derancym88/namigo
+```
+
+Confirm the checkout landed before continuing:
+
+```bash
+ls                    # Dockerfile, docker-compose.yml, src/, scripts/, supabase/
+git log --oneline -1
+```
+
+Now bootstrap the host:
+
+```bash
 SSH_PORT=52436 bash scripts/bootstrap-vps.sh
 ```
 
